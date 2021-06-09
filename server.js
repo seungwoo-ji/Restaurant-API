@@ -34,18 +34,18 @@ app.post('/api/restaurants', (req, res) => {
       res.status(201).json({ message: msg });
     })
     .catch((err) => {
-      res.status(404).json({ message: err.message });
+      res.status(500).json({ message: err.message });
     });
 });
 
-// Get restaurant for a specific page and perPage as well as borough if provided
+// Get restaurants for a specific page and perPage as well as borough if provided
 app.get('/api/restaurants', (req, res) => {
   db.getAllRestaurants(req.query.page, req.query.perPage, req.query.borough)
     .then((restaurants) => {
-      restaurants.length ? res.json(restaurants) : res.status(404).json({ message: 'Resource not found' });
+      res.json(restaurants);
     })
     .catch((err) => {
-      res.status(500).json({ message: err.message }); // status 500 for server error (e.g. when parameters are missing)
+      res.status(500).json({ message: err.message });
     });
 });
 
@@ -53,55 +53,38 @@ app.get('/api/restaurants', (req, res) => {
 app.get('/api/restaurants/:id', (req, res) => {
   db.getRestaurantById(req.params.id)
     .then((restaurant) => {
-      restaurant ? res.json(restaurant) : res.status(404).json({ message: 'Resource not found' });
+      res.json(restaurant);
     })
     .catch((err) => {
-      res.status(500).json({ message: err.message }); // status 500 for server error
+      res.status(500).json({ message: err.message });
     });
 });
 
 // Update a restaurant
 app.put('/api/restaurants/:id', (req, res) => {
-  var id = req.params.id;
-
-  db.getRestaurantById(id)
-    .then((restaurant) => {
-      // Check if the restaurant id to update exists in the database. If not, return 404 error message
-      return restaurant ? Promise.resolve() : Promise.reject(new Error('Resource not found'));
-    })
-    .then(() => {
-      return db.updateRestaurantById(req.body, id);
-    })
+  db.updateRestaurantById(req.body, req.params.id)
     .then((msg) => {
       res.json({ message: msg });
     })
     .catch((err) => {
-      err.message == 'Resource not found'
-        ? res.status(404).json({ message: err.message })
-        : res.status(500).json({ message: err.message }); // status 500 for server error
+      res.status(500).json({ message: err.message });
     });
 });
 
 // Delete a restaurant
 app.delete('/api/restaurants/:id', (req, res) => {
-  var id = req.params.id;
-
-  db.getRestaurantById(id)
-    .then((restaurant) => {
-      // Check if the restaurant id to delete exists in the database. If not, return 404 error message
-      return restaurant ? Promise.resolve() : Promise.reject(new Error('Resource not found'));
-    })
-    .then(() => {
-      return db.deleteRestaurantById(id);
-    })
+  db.deleteRestaurantById(req.params.id)
     .then((msg) => {
-      res.json({ message: msg });
+      res.status(204).end();
     })
     .catch((err) => {
-      err.message == 'Resource not found'
-        ? res.status(404).json({ message: err.message })
-        : res.status(500).json({ message: err.message }); // status 500 for server error
+      res.status(404).json({ message: err.message });
     });
+});
+
+// Resource not found
+app.use((req, res) => {
+  res.status(404).json({ message: 'Resource not found' });
 });
 
 db.initialize()
